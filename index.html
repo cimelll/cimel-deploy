@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Cimel Deploy</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+
+body{
+  background:#05070b;
+  color:#eaf6ff;
+  font-family:Arial,sans-serif;
+  min-height:100vh;
+}
+
+.wrap{
+  width:min(720px,100%);
+  margin:auto;
+  padding:25px 18px 60px;
+}
+
+.top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding-bottom:20px;
+  border-bottom:1px solid #102337;
+  margin-bottom:35px;
+}
+
+.logo{
+  font-size:20px;
+  font-weight:800;
+  color:#fff;
+}
+
+.logo span{color:#168cff}
+
+.badge{
+  font-size:10px;
+  color:#168cff;
+  border:1px solid #124b78;
+  padding:6px 10px;
+  border-radius:20px;
+}
+
+.label{
+  color:#168cff;
+  font-size:11px;
+  letter-spacing:3px;
+  margin-bottom:14px;
+}
+
+h1{
+  font-size:36px;
+  line-height:1.1;
+  margin-bottom:12px;
+}
+
+h1 span{color:#168cff}
+
+.sub{
+  color:#718397;
+  font-size:14px;
+  line-height:1.7;
+  margin-bottom:28px;
+}
+
+.panel{
+  background:#080d14;
+  border:1px solid #102337;
+  border-radius:8px;
+  padding:20px;
+  margin-bottom:14px;
+}
+
+.panel-title{
+  color:#8294a8;
+  font-size:11px;
+  letter-spacing:2px;
+  margin-bottom:14px;
+}
+
+input,textarea{
+  width:100%;
+  background:#03060a;
+  border:1px solid #18324b;
+  color:#fff;
+  padding:13px;
+  border-radius:5px;
+  outline:none;
+  font-family:monospace;
+}
+
+input:focus,textarea:focus{
+  border-color:#168cff;
+  box-shadow:0 0 0 3px rgba(22,140,255,.1);
+}
+
+textarea{
+  min-height:230px;
+  resize:vertical;
+  line-height:1.5;
+}
+
+.deploy{
+  width:100%;
+  padding:16px;
+  border:0;
+  border-radius:6px;
+  background:#168cff;
+  color:white;
+  font-weight:800;
+  cursor:pointer;
+  font-size:15px;
+  margin-top:3px;
+}
+
+.deploy:hover{
+  background:#319cff;
+  box-shadow:0 0 30px rgba(22,140,255,.25);
+}
+
+.info{
+  margin-top:18px;
+  color:#56697d;
+  font-size:12px;
+  line-height:1.6;
+}
+
+.footer{
+  border-top:1px solid #102337;
+  margin-top:35px;
+  padding-top:18px;
+  color:#405266;
+  font-size:11px;
+  display:flex;
+  justify-content:space-between;
+}
+
+@media(max-width:450px){
+  h1{font-size:29px}
+}
+</style>
+</head>
+
+<body>
+
+<div class="wrap">
+
+  <div class="top">
+    <div class="logo">Cimel<span>.</span>Deploy</div>
+    <div class="badge">BETA</div>
+  </div>
+
+  <div class="label">UPLOAD & PUBLISH</div>
+
+  <h1>
+    Ubah <span>HTML</span><br>
+    jadi website.
+  </h1>
+
+  <p class="sub">
+    Masukkan kode HTML kamu, beri nama project,
+    lalu deploy menjadi website yang bisa dibuka secara online.
+  </p>
+
+  <div class="panel">
+
+    <div class="panel-title">01 — NAMA PROJECT</div>
+
+    <input
+      id="projectName"
+      type="text"
+      placeholder="contoh: website-ku"
+      maxlength="50"
+    >
+
+  </div>
+
+  <div class="panel">
+
+    <div class="panel-title">02 — HTML CODE</div>
+
+    <textarea
+      id="htmlCode"
+      placeholder="Tempel kode HTML kamu di sini..."
+    ></textarea>
+
+  </div>
+
+  <button class="deploy" onclick="deploy()">
+    DEPLOY SEKARANG
+  </button>
+
+  <div id="status" class="info"></div>
+
+  <div class="footer">
+    <span>Cimel Deploy</span>
+    <span>v1.0</span>
+  </div>
+
+</div>
+
+<script>
+
+function deploy(){
+
+  const name =
+    document.getElementById("projectName").value.trim();
+
+  const code =
+    document.getElementById("htmlCode").value.trim();
+
+  const status =
+    document.getElementById("status");
+
+  if(!name){
+    status.innerText =
+      "⚠️ Masukkan nama project terlebih dahulu.";
+    return;
+  }
+
+  if(!code){
+    status.innerText =
+      "⚠️ Masukkan kode HTML terlebih dahulu.";
+    return;
+  }
+
+  status.innerText =
+    "⏳ Project sedang diproses...";
+
+  /*
+    BACKEND DEPLOY AKAN DIHUBUNGKAN
+    DI BAGIAN INI.
+  */
+
+  setTimeout(()=>{
+    status.innerText =
+      "Backend deploy belum terhubung. Tampilan berhasil dibuat.";
+  },1000);
+
+}
+
+</script>
+
+</body>
+  </html>
