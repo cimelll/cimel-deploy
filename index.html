@@ -69,11 +69,7 @@ h1 span{color:#168cff}
 }
 
 .panel{
-  background:#080d14;
-  border:1px solid #102337;
-  border-radius:8px;
-  padding:20px;
-  margin-bottom:14px;
+  margin-bottom:20px;
 }
 
 .panel-title{
@@ -206,7 +202,7 @@ textarea{
 
 <script>
 
-function deploy(){
+async function deploy(){
 
   const name =
     document.getElementById("projectName").value.trim();
@@ -230,21 +226,46 @@ function deploy(){
   }
 
   status.innerText =
-    "⏳ Project sedang diproses...";
+    "⏳ Project sedang di-deploy...";
 
-  /*
-    BACKEND DEPLOY AKAN DIHUBUNGKAN
-    DI BAGIAN INI.
-  */
+  try{
 
-  setTimeout(()=>{
+    const response = await fetch("/api/deploy",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify({
+        projectName:name,
+        html:code
+      })
+    });
+
+    const data = await response.json();
+
+    if(!response.ok){
+      throw new Error(
+        data.error || "Deploy gagal"
+      );
+    }
+
+    status.innerHTML =
+      '✅ Berhasil! <a href="' +
+      data.url +
+      '" target="_blank" style="color:#168cff">' +
+      data.url +
+      '</a>';
+
+  }catch(error){
+
     status.innerText =
-      "Backend deploy belum terhubung. Tampilan berhasil dibuat.";
-  },1000);
+      "❌ Deploy gagal: " + error.message;
+
+  }
 
 }
 
 </script>
 
 </body>
-  </html>
+</html>
