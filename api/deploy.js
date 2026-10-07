@@ -18,15 +18,12 @@ export default async function handler(req, res) {
       "https://api.vercel.com/v13/deployments",
       {
         method: "POST",
-
         headers: {
           Authorization: `Bearer ${process.env.VERCEL_TOKEN}`,
           "Content-Type": "application/json"
         },
-
         body: JSON.stringify({
           name: projectName,
-
           target: "production",
 
           files: [
@@ -54,16 +51,19 @@ export default async function handler(req, res) {
       return res.status(response.status).json(data);
     }
 
+    // ambil production alias, bukan deployment url
+    const productionAlias =
+      data.alias?.find(alias => alias.includes(".vercel.app")) ||
+      `${projectName}.vercel.app`;
+
     return res.status(200).json({
       ok: true,
-      url: `https://${data.url}`
+      url: `https://${productionAlias}`
     });
 
   } catch (error) {
-
     return res.status(500).json({
       error: error.message
     });
-
   }
-              }
+}
