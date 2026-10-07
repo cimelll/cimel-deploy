@@ -6,7 +6,11 @@
 <title>Cimel Deploy</title>
 
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+}
 
 body{
   background:#05070b;
@@ -33,10 +37,11 @@ body{
 .logo{
   font-size:20px;
   font-weight:800;
-  color:#fff;
 }
 
-.logo span{color:#168cff}
+.logo span{
+  color:#168cff;
+}
 
 .badge{
   font-size:10px;
@@ -59,7 +64,9 @@ h1{
   margin-bottom:12px;
 }
 
-h1 span{color:#168cff}
+h1 span{
+  color:#168cff;
+}
 
 .sub{
   color:#718397;
@@ -90,7 +97,8 @@ input,textarea{
   font-family:monospace;
 }
 
-input:focus,textarea:focus{
+input:focus,
+textarea:focus{
   border-color:#168cff;
   box-shadow:0 0 0 3px rgba(22,140,255,.1);
 }
@@ -111,19 +119,27 @@ textarea{
   font-weight:800;
   cursor:pointer;
   font-size:15px;
-  margin-top:3px;
 }
 
-.deploy:hover{
-  background:#319cff;
-  box-shadow:0 0 30px rgba(22,140,255,.25);
+.deploy:disabled{
+  opacity:.6;
+  cursor:not-allowed;
 }
 
 .info{
   margin-top:18px;
-  color:#56697d;
+  color:#718397;
   font-size:12px;
   line-height:1.6;
+  word-break:break-word;
+}
+
+.success{
+  color:#39d98a;
+}
+
+.error{
+  color:#ff5c70;
 }
 
 .footer{
@@ -136,8 +152,15 @@ textarea{
   justify-content:space-between;
 }
 
+a{
+  color:#168cff;
+  word-break:break-all;
+}
+
 @media(max-width:450px){
-  h1{font-size:29px}
+  h1{
+    font-size:29px;
+  }
 }
 </style>
 </head>
@@ -147,11 +170,18 @@ textarea{
 <div class="wrap">
 
   <div class="top">
-    <div class="logo">Cimel<span>.</span>Deploy</div>
-    <div class="badge">BETA</div>
+    <div class="logo">
+      Cimel<span>.</span>Deploy
+    </div>
+
+    <div class="badge">
+      BETA
+    </div>
   </div>
 
-  <div class="label">UPLOAD & PUBLISH</div>
+  <div class="label">
+    UPLOAD & PUBLISH
+  </div>
 
   <h1>
     Ubah <span>HTML</span><br>
@@ -165,7 +195,9 @@ textarea{
 
   <div class="panel">
 
-    <div class="panel-title">01 — NAMA PROJECT</div>
+    <div class="panel-title">
+      01 — NAMA PROJECT
+    </div>
 
     <input
       id="projectName"
@@ -178,7 +210,9 @@ textarea{
 
   <div class="panel">
 
-    <div class="panel-title">02 — HTML CODE</div>
+    <div class="panel-title">
+      02 — HTML CODE
+    </div>
 
     <textarea
       id="htmlCode"
@@ -187,7 +221,11 @@ textarea{
 
   </div>
 
-  <button class="deploy" onclick="deploy()">
+  <button
+    id="deployButton"
+    class="deploy"
+    onclick="deploy()"
+  >
     DEPLOY SEKARANG
   </button>
 
@@ -204,68 +242,156 @@ textarea{
 
 async function deploy(){
 
-  const name =
+  const projectName =
     document.getElementById("projectName").value.trim();
 
-  const code =
+  const html =
     document.getElementById("htmlCode").value.trim();
 
   const status =
     document.getElementById("status");
 
-  if(!name){
-    status.innerText =
-      "⚠️ Masukkan nama project terlebih dahulu.";
+  const button =
+    document.getElementById("deployButton");
+
+  if(!projectName){
+
+    status.className = "info error";
+
+    status.textContent =
+      "⚠️ masukkan nama project dulu.";
+
     return;
   }
 
-  if(!code){
-    status.innerText =
-      "⚠️ Masukkan kode HTML terlebih dahulu.";
+  if(!html){
+
+    status.className = "info error";
+
+    status.textContent =
+      "⚠️ masukkan kode html dulu.";
+
     return;
   }
 
-  status.innerText =
-    "⏳ Project sedang di-deploy...";
+  button.disabled = true;
+  button.textContent = "SEDANG DEPLOY...";
+
+  status.className = "info";
+  status.textContent =
+    "⏳ sedang membuat website...";
 
   try{
 
     const response = await fetch("/api/deploy",{
+
       method:"POST",
+
       headers:{
         "Content-Type":"application/json"
       },
+
       body:JSON.stringify({
-        projectName:name,
-        html:code
+
+        projectName:projectName,
+        html:html
+
       })
+
     });
 
     const data = await response.json();
 
     if(!response.ok){
+
+      let errorText = "";
+
+      if(typeof data === "string"){
+        errorText = data;
+      }
+
+      else if(typeof data.error === "string"){
+        errorText = data.error;
+      }
+
+      else if(data.error){
+        errorText = JSON.stringify(
+          data.error,
+          null,
+          2
+        );
+      }
+
+      else{
+        errorText = JSON.stringify(
+          data,
+          null,
+          2
+        );
+      }
+
       throw new Error(
-        data.error || "Deploy gagal"
+        "HTTP " +
+        response.status +
+        ": " +
+        errorText
       );
     }
 
+    if(!data.url){
+
+      throw new Error(
+        "deploy berhasil tetapi link website tidak ditemukan. response: " +
+        JSON.stringify(data,null,2)
+      );
+    }
+
+    status.className = "info success";
+
     status.innerHTML =
-      '✅ Berhasil! <a href="' +
+      "✅ website berhasil dibuat!<br><br>" +
+      '<a href="' +
       data.url +
-      '" target="_blank" style="color:#168cff">' +
+      '" target="_blank">' +
       data.url +
-      '</a>';
+      "</a>";
 
-  }catch(error){
-
-    status.innerText =
-      "❌ Deploy gagal: " + error.message;
+    button.textContent =
+      "DEPLOY BERHASIL";
 
   }
+
+  catch(error){
+
+    status.className = "info error";
+
+    status.innerHTML =
+      "❌ Deploy gagal:<br><br>" +
+      "<pre style='white-space:pre-wrap'>" +
+      escapeHtml(error.message) +
+      "</pre>";
+
+    button.disabled = false;
+
+    button.textContent =
+      "DEPLOY LAGI";
+
+  }
+
+}
+
+function escapeHtml(text){
+
+  return text
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
 
 }
 
 </script>
 
 </body>
-</html>
+  </html>
