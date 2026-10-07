@@ -14,12 +14,21 @@ export default async function handler(req, res) {
       });
     }
 
+    const token = process.env.VERCEL_TOKEN;
+
+    if (!token) {
+      return res.status(500).json({
+        error: "VERCEL_TOKEN belum dipasang di Vercel"
+      });
+    }
+
+    // buat deployment production
     const response = await fetch(
       "https://api.vercel.com/v13/deployments",
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${process.env.VERCEL_TOKEN}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
@@ -51,14 +60,57 @@ export default async function handler(req, res) {
       return res.status(response.status).json(data);
     }
 
-    // ambil production alias, bukan deployment url
-    const productionAlias =
-      data.alias?.find(alias => alias.includes(".vercel.app")) ||
-      `${projectName}.vercel.app`;
+    // tunggu sampai deployment READY
+    let deployment = data;
+
+    for (let i = 0; i < 40; i++) {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      const check = await fetch(
+        `https://api.vercel.com/v13/deployments/${data.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      deployment = await check.json();
+
+      if (deployment.readyState === "READY") {
+        break;
+      }
+
+      if (deployment.readyState === "ERROR") {
+        return res.status(500).json({
+          error: "build deployment gagal di Vercel"
+        });
+      }
+    }
+
+    if (deployment.readyState !== "READY") {
+      return res.status(504).json({
+        error: "deployment timeout"
+      });
+    }
+
+    // ambil production alias
+    let alias = null;
+
+    if (deployment.alias && deployment.alias.length) {
+      alias =
+        deployment.alias.find(a => a.endsWith(".vercel.app")) ||
+        deployment.alias[0];
+    }
+
+    // fallback ke default production domain
+    if (!alias) {
+      alias = `${projectName}.vercel.app`;
+    }
 
     return res.status(200).json({
       ok: true,
-      url: `https://${productionAlias}`
+      url: `https://${alias}`
     });
 
   } catch (error) {
@@ -66,4 +118,4 @@ export default async function handler(req, res) {
       error: error.message
     });
   }
-}
+      }
