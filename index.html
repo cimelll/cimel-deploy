@@ -109,6 +109,51 @@ textarea{
   line-height:1.5;
 }
 
+/* IMPORT HTML */
+
+.file-upload{
+  width:100%;
+  background:#03060a;
+  border:1px dashed #18324b;
+  color:#718397;
+  padding:16px;
+  border-radius:5px;
+  cursor:pointer;
+  text-align:center;
+  transition:.2s;
+}
+
+.file-upload:hover{
+  border-color:#168cff;
+  color:#168cff;
+}
+
+.file-upload input{
+  display:none;
+}
+
+.file-title{
+  font-size:13px;
+  font-weight:bold;
+  color:#eaf6ff;
+  margin-bottom:5px;
+}
+
+.file-name{
+  font-size:11px;
+  word-break:break-all;
+}
+
+.clear-file{
+  display:none;
+  margin-top:8px;
+  background:none;
+  border:0;
+  color:#ff5c70;
+  font-size:11px;
+  cursor:pointer;
+}
+
 .deploy{
   width:100%;
   padding:16px;
@@ -211,12 +256,46 @@ a{
   <div class="panel">
 
     <div class="panel-title">
-      02 — HTML CODE
+      02 — IMPORT FILE HTML
+    </div>
+
+    <label class="file-upload">
+
+      <input
+        id="htmlFile"
+        type="file"
+        accept=".html,.htm,text/html"
+      >
+
+      <div class="file-title">
+        📁 Pilih file HTML
+      </div>
+
+      <div id="fileName" class="file-name">
+        klik untuk memilih file .html
+      </div>
+
+    </label>
+
+    <button
+      id="clearFile"
+      class="clear-file"
+      type="button"
+    >
+      hapus file
+    </button>
+
+  </div>
+
+  <div class="panel">
+
+    <div class="panel-title">
+      03 — HTML CODE
     </div>
 
     <textarea
       id="htmlCode"
-      placeholder="Tempel kode HTML kamu di sini..."
+      placeholder="atau tempel kode HTML kamu di sini..."
     ></textarea>
 
   </div>
@@ -233,12 +312,113 @@ a{
 
   <div class="footer">
     <span>Cimel Deploy</span>
-    <span>v1.0</span>
+    <span>v1.1</span>
   </div>
 
 </div>
 
 <script>
+
+const fileInput =
+  document.getElementById("htmlFile");
+
+const fileName =
+  document.getElementById("fileName");
+
+const clearFile =
+  document.getElementById("clearFile");
+
+const htmlCode =
+  document.getElementById("htmlCode");
+
+const projectName =
+  document.getElementById("projectName");
+
+
+// =========================
+// IMPORT FILE HTML
+// =========================
+
+fileInput.addEventListener("change", function(){
+
+  const file = this.files[0];
+
+  if(!file) return;
+
+  const name = file.name.toLowerCase();
+
+  if(!name.endsWith(".html") && !name.endsWith(".htm")){
+
+    alert("file harus berformat .html");
+
+    this.value = "";
+
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = function(event){
+
+    // masukkan isi file ke textarea
+    htmlCode.value = event.target.result;
+
+    fileName.textContent =
+      "✓ " + file.name;
+
+    clearFile.style.display =
+      "block";
+
+
+    // otomatis isi nama project
+    if(!projectName.value.trim()){
+
+      let project =
+        file.name
+          .replace(/\.(html?|htm)$/i,"")
+          .toLowerCase()
+          .replace(/[^a-z0-9-]/g,"-")
+          .replace(/-+/g,"-")
+          .replace(/^-|-$/g,"");
+
+      if(project.length >= 3){
+
+        projectName.value =
+          project.substring(0,50);
+
+      }
+
+    }
+
+  };
+
+  reader.readAsText(file);
+
+});
+
+
+// =========================
+// HAPUS FILE
+// =========================
+
+clearFile.addEventListener("click",function(){
+
+  fileInput.value = "";
+
+  fileName.textContent =
+    "klik untuk memilih file .html";
+
+  htmlCode.value = "";
+
+  clearFile.style.display =
+    "none";
+
+});
+
+
+// =========================
+// DEPLOY
+// =========================
 
 async function deploy(){
 
@@ -254,9 +434,11 @@ async function deploy(){
   const button =
     document.getElementById("deployButton");
 
+
   if(!projectName){
 
-    status.className = "info error";
+    status.className =
+      "info error";
 
     status.textContent =
       "⚠️ masukkan nama project dulu.";
@@ -264,71 +446,99 @@ async function deploy(){
     return;
   }
 
+
   if(!html){
 
-    status.className = "info error";
+    status.className =
+      "info error";
 
     status.textContent =
-      "⚠️ masukkan kode html dulu.";
+      "⚠️ import file html atau masukkan kode html dulu.";
 
     return;
   }
 
-  button.disabled = true;
-  button.textContent = "SEDANG DEPLOY...";
 
-  status.className = "info";
+  button.disabled = true;
+
+  button.textContent =
+    "SEDANG DEPLOY...";
+
+
+  status.className =
+    "info";
+
   status.textContent =
     "⏳ sedang membuat website...";
 
+
   try{
 
-    const response = await fetch("/api/deploy",{
+    const response =
+      await fetch("/api/deploy",{
 
-      method:"POST",
+        method:"POST",
 
-      headers:{
-        "Content-Type":"application/json"
-      },
+        headers:{
+          "Content-Type":"application/json"
+        },
 
-      body:JSON.stringify({
+        body:JSON.stringify({
 
-        projectName:projectName,
-        html:html
+          projectName:projectName,
 
-      })
+          html:html
 
-    });
+        })
 
-    const data = await response.json();
+      });
+
+
+    const data =
+      await response.json();
+
 
     if(!response.ok){
 
       let errorText = "";
 
+
       if(typeof data === "string"){
-        errorText = data;
+
+        errorText =
+          data;
+
       }
 
       else if(typeof data.error === "string"){
-        errorText = data.error;
+
+        errorText =
+          data.error;
+
       }
 
       else if(data.error){
-        errorText = JSON.stringify(
-          data.error,
-          null,
-          2
-        );
+
+        errorText =
+          JSON.stringify(
+            data.error,
+            null,
+            2
+          );
+
       }
 
       else{
-        errorText = JSON.stringify(
-          data,
-          null,
-          2
-        );
+
+        errorText =
+          JSON.stringify(
+            data,
+            null,
+            2
+          );
+
       }
+
 
       throw new Error(
         "HTTP " +
@@ -336,42 +546,60 @@ async function deploy(){
         ": " +
         errorText
       );
+
     }
+
 
     if(!data.url){
 
       throw new Error(
-        "deploy berhasil tetapi link website tidak ditemukan. response: " +
-        JSON.stringify(data,null,2)
+        "deploy berhasil tetapi link website tidak ditemukan."
       );
+
     }
 
-    status.className = "info success";
+
+    status.className =
+      "info success";
+
 
     status.innerHTML =
       "✅ website berhasil dibuat!<br><br>" +
+
       '<a href="' +
       data.url +
-      '" target="_blank">' +
+      '" target="_blank" rel="noopener noreferrer">' +
+
       data.url +
+
       "</a>";
+
 
     button.textContent =
       "DEPLOY BERHASIL";
+
 
   }
 
   catch(error){
 
-    status.className = "info error";
+    status.className =
+      "info error";
+
 
     status.innerHTML =
       "❌ Deploy gagal:<br><br>" +
+
       "<pre style='white-space:pre-wrap'>" +
+
       escapeHtml(error.message) +
+
       "</pre>";
 
-    button.disabled = false;
+
+    button.disabled =
+      false;
+
 
     button.textContent =
       "DEPLOY LAGI";
@@ -379,6 +607,7 @@ async function deploy(){
   }
 
 }
+
 
 function escapeHtml(text){
 
@@ -394,4 +623,4 @@ function escapeHtml(text){
 </script>
 
 </body>
-  </html>
+    </html>
