@@ -209,6 +209,39 @@ textarea{
   }
 }
 
+.result-actions{
+  display:flex;
+  gap:10px;
+  margin-top:14px;
+}
+
+.result-btn{
+  flex:1;
+  padding:12px;
+  border-radius:6px;
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+  text-align:center;
+  text-decoration:none;
+}
+
+.open-btn{
+  background:#168cff;
+  color:white;
+  border:1px solid #168cff;
+}
+
+.copy-btn{
+  background:#03060a;
+  color:#168cff;
+  border:1px solid #168cff;
+}
+
+.copy-btn:hover{
+  background:#071321;
+}
+
 .footer{
   border-top:1px solid #102337;
   margin-top:35px;
@@ -227,6 +260,10 @@ a{
 @media(max-width:450px){
   h1{
     font-size:29px;
+  }
+
+  .result-actions{
+    flex-direction:column;
   }
 }
 </style>
@@ -527,16 +564,37 @@ async function deploy(){
       );
     }
 
+    const websiteUrl =
+      data.url.replace(/'/g,"&#039;");
+
     status.className =
       "info success";
 
     status.innerHTML =
       "link website kamu sudah siap<br><br>" +
       '<a href="' +
-      data.url +
+      websiteUrl +
       '" target="_blank">' +
-      data.url +
-      "</a>";
+      websiteUrl +
+      "</a>" +
+
+      '<div class="result-actions">' +
+
+      '<a class="result-btn open-btn" ' +
+      'href="' +
+      websiteUrl +
+      '" target="_blank">' +
+      'BUKA WEBSITE' +
+      '</a>' +
+
+      '<button class="result-btn copy-btn" ' +
+      'onclick="copyWebsite(\'' +
+      data.url.replace(/'/g,"\\'") +
+      '\')">' +
+      'SALIN WEBSITE' +
+      '</button>' +
+
+      '</div>';
 
     button.textContent =
       "DEPLOY BERHASIL";
@@ -559,6 +617,41 @@ async function deploy(){
 
     button.textContent =
       "DEPLOY LAGI";
+
+  }
+
+}
+
+async function copyWebsite(url){
+
+  try{
+
+    await navigator.clipboard.writeText(url);
+
+    const buttons =
+      document.querySelectorAll(".copy-btn");
+
+    buttons.forEach(button => {
+
+      button.textContent =
+        "TERSALIN";
+
+      setTimeout(() => {
+
+        button.textContent =
+          "SALIN WEBSITE";
+
+      },1500);
+
+    });
+
+  }
+
+  catch(error){
+
+    alert(
+      "gagal menyalin link"
+    );
 
   }
 
