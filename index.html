@@ -109,49 +109,45 @@ textarea{
   line-height:1.5;
 }
 
-/* IMPORT HTML */
-
-.file-upload{
+.file-box{
   width:100%;
   background:#03060a;
-  border:1px dashed #18324b;
-  color:#718397;
-  padding:16px;
+  border:1px solid #18324b;
   border-radius:5px;
-  cursor:pointer;
-  text-align:center;
-  transition:.2s;
+  padding:15px;
 }
 
-.file-upload:hover{
+.file-label{
+  display:block;
+  width:100%;
+  padding:13px;
+  border:1px dashed #28516f;
+  border-radius:5px;
+  text-align:center;
+  color:#8294a8;
+  cursor:pointer;
+}
+
+.file-label:hover{
   border-color:#168cff;
   color:#168cff;
 }
 
-.file-upload input{
-  display:none;
-}
-
-.file-title{
-  font-size:13px;
-  font-weight:bold;
-  color:#eaf6ff;
-  margin-bottom:5px;
-}
-
 .file-name{
-  font-size:11px;
-  word-break:break-all;
+  margin-top:10px;
+  color:#718397;
+  font-size:12px;
+  word-break:break-word;
 }
 
 .clear-file{
   display:none;
-  margin-top:8px;
+  margin-top:10px;
   background:none;
   border:0;
   color:#ff5c70;
-  font-size:11px;
   cursor:pointer;
+  font-size:11px;
 }
 
 .deploy{
@@ -185,6 +181,32 @@ textarea{
 
 .error{
   color:#ff5c70;
+}
+
+.loading{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+}
+
+.loading-dot{
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:#39d98a;
+  animation:pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse{
+  0%,100%{
+    opacity:.25;
+    transform:scale(.8);
+  }
+
+  50%{
+    opacity:1;
+    transform:scale(1);
+  }
 }
 
 .footer{
@@ -247,7 +269,7 @@ a{
     <input
       id="projectName"
       type="text"
-      placeholder="contoh: website-ku"
+      placeholder="contoh: cimelcantik"
       maxlength="50"
     >
 
@@ -259,31 +281,33 @@ a{
       02 — IMPORT FILE HTML
     </div>
 
-    <label class="file-upload">
+    <div class="file-box">
+
+      <label class="file-label" for="htmlFile">
+        Pilih file HTML
+      </label>
 
       <input
         id="htmlFile"
         type="file"
         accept=".html,.htm,text/html"
+        hidden
       >
 
-      <div class="file-title">
-        📁 Pilih file HTML
-      </div>
+      <div
+        id="fileName"
+        class="file-name"
+      ></div>
 
-      <div id="fileName" class="file-name">
-        klik untuk memilih file .html
-      </div>
+      <button
+        id="clearFile"
+        class="clear-file"
+        onclick="clearFile()"
+      >
+        Hapus file
+      </button>
 
-    </label>
-
-    <button
-      id="clearFile"
-      class="clear-file"
-      type="button"
-    >
-      hapus file
-    </button>
+    </div>
 
   </div>
 
@@ -295,7 +319,7 @@ a{
 
     <textarea
       id="htmlCode"
-      placeholder="atau tempel kode HTML kamu di sini..."
+      placeholder="Tempel kode HTML kamu di sini..."
     ></textarea>
 
   </div>
@@ -322,73 +346,51 @@ a{
 const fileInput =
   document.getElementById("htmlFile");
 
-const fileName =
-  document.getElementById("fileName");
-
-const clearFile =
-  document.getElementById("clearFile");
-
 const htmlCode =
   document.getElementById("htmlCode");
 
 const projectName =
   document.getElementById("projectName");
 
+const fileName =
+  document.getElementById("fileName");
 
-// =========================
-// IMPORT FILE HTML
-// =========================
+const clearFileButton =
+  document.getElementById("clearFile");
 
 fileInput.addEventListener("change", function(){
 
   const file = this.files[0];
 
-  if(!file) return;
-
-  const name = file.name.toLowerCase();
-
-  if(!name.endsWith(".html") && !name.endsWith(".htm")){
-
-    alert("file harus berformat .html");
-
-    this.value = "";
-
+  if(!file){
     return;
   }
 
-  const reader = new FileReader();
+  fileName.textContent =
+    file.name;
+
+  clearFileButton.style.display =
+    "block";
+
+  if(!projectName.value.trim()){
+
+    projectName.value =
+      file.name
+        .replace(/\.(html?|HTML?)$/,"")
+        .toLowerCase()
+        .replace(/[^a-z0-9-]+/g,"-")
+        .replace(/^-+|-+$/g,"")
+        .slice(0,50);
+
+  }
+
+  const reader =
+    new FileReader();
 
   reader.onload = function(event){
 
-    // masukkan isi file ke textarea
-    htmlCode.value = event.target.result;
-
-    fileName.textContent =
-      "✓ " + file.name;
-
-    clearFile.style.display =
-      "block";
-
-
-    // otomatis isi nama project
-    if(!projectName.value.trim()){
-
-      let project =
-        file.name
-          .replace(/\.(html?|htm)$/i,"")
-          .toLowerCase()
-          .replace(/[^a-z0-9-]/g,"-")
-          .replace(/-+/g,"-")
-          .replace(/^-|-$/g,"");
-
-      if(project.length >= 3){
-
-        projectName.value =
-          project.substring(0,50);
-
-      }
-
-    }
+    htmlCode.value =
+      event.target.result;
 
   };
 
@@ -396,37 +398,24 @@ fileInput.addEventListener("change", function(){
 
 });
 
-
-// =========================
-// HAPUS FILE
-// =========================
-
-clearFile.addEventListener("click",function(){
+function clearFile(){
 
   fileInput.value = "";
 
-  fileName.textContent =
-    "klik untuk memilih file .html";
+  fileName.textContent = "";
 
-  htmlCode.value = "";
-
-  clearFile.style.display =
+  clearFileButton.style.display =
     "none";
 
-});
-
-
-// =========================
-// DEPLOY
-// =========================
+}
 
 async function deploy(){
 
-  const projectName =
-    document.getElementById("projectName").value.trim();
+  const name =
+    projectName.value.trim();
 
   const html =
-    document.getElementById("htmlCode").value.trim();
+    htmlCode.value.trim();
 
   const status =
     document.getElementById("status");
@@ -434,18 +423,16 @@ async function deploy(){
   const button =
     document.getElementById("deployButton");
 
-
-  if(!projectName){
+  if(!name){
 
     status.className =
       "info error";
 
     status.textContent =
-      "⚠️ masukkan nama project dulu.";
+      "masukkan nama project dulu.";
 
     return;
   }
-
 
   if(!html){
 
@@ -453,24 +440,24 @@ async function deploy(){
       "info error";
 
     status.textContent =
-      "⚠️ import file html atau masukkan kode html dulu.";
+      "masukkan kode html dulu.";
 
     return;
   }
-
 
   button.disabled = true;
 
   button.textContent =
     "SEDANG DEPLOY...";
 
-
   status.className =
     "info";
 
-  status.textContent =
-    "⏳ sedang membuat website...";
-
+  status.innerHTML =
+    '<span class="loading">' +
+    'sedang membuat website...' +
+    '<span class="loading-dot"></span>' +
+    '</span>';
 
   try{
 
@@ -485,60 +472,45 @@ async function deploy(){
 
         body:JSON.stringify({
 
-          projectName:projectName,
-
+          projectName:name,
           html:html
 
         })
 
       });
 
-
     const data =
       await response.json();
-
 
     if(!response.ok){
 
       let errorText = "";
 
-
       if(typeof data === "string"){
-
-        errorText =
-          data;
-
+        errorText = data;
       }
 
       else if(typeof data.error === "string"){
-
-        errorText =
-          data.error;
-
+        errorText = data.error;
       }
 
       else if(data.error){
-
         errorText =
           JSON.stringify(
             data.error,
             null,
             2
           );
-
       }
 
       else{
-
         errorText =
           JSON.stringify(
             data,
             null,
             2
           );
-
       }
-
 
       throw new Error(
         "HTTP " +
@@ -546,38 +518,28 @@ async function deploy(){
         ": " +
         errorText
       );
-
     }
-
 
     if(!data.url){
 
       throw new Error(
-        "deploy berhasil tetapi link website tidak ditemukan."
+        "link website tidak ditemukan."
       );
-
     }
-
 
     status.className =
       "info success";
 
-
     status.innerHTML =
-      "✅ website berhasil dibuat!<br><br>" +
-
+      "link website kamu sudah siap<br><br>" +
       '<a href="' +
       data.url +
-      '" target="_blank" rel="noopener noreferrer">' +
-
+      '" target="_blank">' +
       data.url +
-
       "</a>";
-
 
     button.textContent =
       "DEPLOY BERHASIL";
-
 
   }
 
@@ -586,20 +548,14 @@ async function deploy(){
     status.className =
       "info error";
 
-
     status.innerHTML =
-      "❌ Deploy gagal:<br><br>" +
-
+      "Deploy gagal:<br><br>" +
       "<pre style='white-space:pre-wrap'>" +
-
       escapeHtml(error.message) +
-
       "</pre>";
-
 
     button.disabled =
       false;
-
 
     button.textContent =
       "DEPLOY LAGI";
@@ -607,7 +563,6 @@ async function deploy(){
   }
 
 }
-
 
 function escapeHtml(text){
 
@@ -623,4 +578,4 @@ function escapeHtml(text){
 </script>
 
 </body>
-    </html>
+</html>
