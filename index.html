@@ -14,26 +14,11 @@
 
 body{
   background:
-    radial-gradient(circle at 15% 10%,rgba(22,140,255,.08),transparent 30%),
-    radial-gradient(circle at 85% 90%,rgba(22,140,255,.05),transparent 30%),
+    radial-gradient(circle at 50% -10%,rgba(22,140,255,.06),transparent 35%),
     #020304;
   color:#eaf6ff;
   font-family:Arial,sans-serif;
   min-height:100vh;
-}
-
-body::before{
-  content:"";
-  position:fixed;
-  inset:0;
-  pointer-events:none;
-  background:
-    linear-gradient(
-      120deg,
-      rgba(255,255,255,.025),
-      transparent 35%,
-      rgba(255,255,255,.012)
-    );
 }
 
 .wrap{
@@ -42,25 +27,13 @@ body::before{
   padding:25px 18px 60px;
 }
 
-/* glass header */
-
 .top{
   display:flex;
   justify-content:space-between;
   align-items:center;
-  padding:14px 16px;
+  padding-bottom:20px;
+  border-bottom:1px solid rgba(255,255,255,.055);
   margin-bottom:35px;
-
-  background:rgba(12,16,22,.58);
-  backdrop-filter:blur(22px);
-  -webkit-backdrop-filter:blur(22px);
-
-  border:1px solid rgba(255,255,255,.07);
-  border-radius:14px;
-
-  box-shadow:
-    0 10px 35px rgba(0,0,0,.25),
-    inset 0 1px 0 rgba(255,255,255,.035);
 }
 
 .logo{
@@ -75,13 +48,11 @@ body::before{
 .badge{
   font-size:10px;
   color:#168cff;
-  border:1px solid rgba(22,140,255,.25);
-  background:rgba(22,140,255,.05);
+  border:1px solid rgba(22,140,255,.22);
+  background:rgba(22,140,255,.025);
   padding:6px 10px;
   border-radius:20px;
 }
-
-/* title */
 
 .label{
   color:#168cff;
@@ -93,6 +64,8 @@ body::before{
 h1{
   font-size:36px;
   line-height:1.1;
+  font-weight:800;
+  letter-spacing:-.7px;
   margin-bottom:12px;
 }
 
@@ -101,28 +74,28 @@ h1 span{
 }
 
 .sub{
-  color:#718397;
+  color:#647486;
   font-size:14px;
   line-height:1.7;
   margin-bottom:28px;
 }
 
-/* panels */
+/* glass panel */
 
 .panel{
   margin-bottom:20px;
-  padding:17px;
+  padding:16px;
 
-  background:rgba(10,14,19,.52);
-  backdrop-filter:blur(20px);
-  -webkit-backdrop-filter:blur(20px);
+  background:rgba(7,9,12,.72);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
 
-  border:1px solid rgba(255,255,255,.065);
-  border-radius:14px;
+  border:1px solid rgba(255,255,255,.055);
+  border-radius:13px;
 
   box-shadow:
-    0 12px 35px rgba(0,0,0,.22),
-    inset 0 1px 0 rgba(255,255,255,.025);
+    0 10px 30px rgba(0,0,0,.35),
+    inset 0 1px 0 rgba(255,255,255,.018);
 }
 
 .panel-title{
@@ -134,28 +107,29 @@ h1 span{
 
 input,textarea{
   width:100%;
-
-  background:rgba(0,0,0,.28);
-  border:1px solid rgba(255,255,255,.08);
-
+  background:rgba(0,0,0,.48);
+  border:1px solid rgba(255,255,255,.07);
   color:#fff;
   padding:13px;
-  border-radius:9px;
-
+  border-radius:8px;
   outline:none;
   font-family:monospace;
 
-  backdrop-filter:blur(12px);
-  -webkit-backdrop-filter:blur(12px);
+  box-shadow:
+    inset 0 1px 8px rgba(0,0,0,.25);
+}
+
+input::placeholder,
+textarea::placeholder{
+  color:#465565;
 }
 
 input:focus,
 textarea:focus{
-  border-color:rgba(22,140,255,.55);
-
+  border-color:rgba(22,140,255,.5);
   box-shadow:
-    0 0 0 3px rgba(22,140,255,.07),
-    inset 0 1px 0 rgba(255,255,255,.025);
+    0 0 0 3px rgba(22,140,255,.055),
+    inset 0 1px 8px rgba(0,0,0,.3);
 }
 
 textarea{
@@ -168,12 +142,10 @@ textarea{
 
 .file-box{
   width:100%;
-
-  background:rgba(0,0,0,.2);
-  border:1px solid rgba(255,255,255,.06);
-
-  border-radius:10px;
-  padding:12px;
+  background:rgba(0,0,0,.3);
+  border:1px solid rgba(255,255,255,.045);
+  border-radius:9px;
+  padding:11px;
 }
 
 .file-label{
@@ -181,21 +153,19 @@ textarea{
   width:100%;
   padding:13px;
 
-  border:1px dashed rgba(255,255,255,.12);
-  border-radius:9px;
+  border:1px dashed rgba(255,255,255,.1);
+  border-radius:8px;
 
   text-align:center;
-  color:#8294a8;
+  color:#718397;
   cursor:pointer;
 
-  background:rgba(255,255,255,.015);
-  transition:.2s;
+  background:rgba(255,255,255,.008);
 }
 
 .file-label:hover{
-  border-color:rgba(22,140,255,.5);
   color:#168cff;
-  background:rgba(22,140,255,.03);
+  border-color:rgba(22,140,255,.4);
 }
 
 .file-name{
@@ -208,10 +178,8 @@ textarea{
 .clear-file{
   display:none;
   margin-top:10px;
-
   background:none;
   border:0;
-
   color:#ff5c70;
   cursor:pointer;
   font-size:11px;
@@ -224,38 +192,21 @@ textarea{
   padding:16px;
 
   border:1px solid rgba(22,140,255,.35);
-  border-radius:10px;
+  border-radius:9px;
 
-  background:
-    linear-gradient(
-      180deg,
-      rgba(22,140,255,.95),
-      rgba(14,108,190,.95)
-    );
+  background:#168cff;
 
   color:white;
   font-weight:800;
   cursor:pointer;
   font-size:15px;
 
-  box-shadow:
-    0 8px 25px rgba(22,140,255,.12),
-    inset 0 1px 0 rgba(255,255,255,.15);
-
-  transition:.2s;
-}
-
-.deploy:hover{
-  transform:translateY(-1px);
-  box-shadow:
-    0 10px 30px rgba(22,140,255,.2),
-    inset 0 1px 0 rgba(255,255,255,.18);
+  box-shadow:0 8px 25px rgba(22,140,255,.1);
 }
 
 .deploy:disabled{
   opacity:.6;
   cursor:not-allowed;
-  transform:none;
 }
 
 /* status */
@@ -287,8 +238,8 @@ textarea{
   height:7px;
   border-radius:50%;
   background:#39d98a;
+  box-shadow:0 0 8px rgba(57,217,138,.4);
   animation:pulse 1s ease-in-out infinite;
-  box-shadow:0 0 8px rgba(57,217,138,.35);
 }
 
 @keyframes pulse{
@@ -314,34 +265,28 @@ textarea{
 .result-btn{
   flex:1;
   padding:12px;
-
-  border-radius:9px;
-
+  border-radius:8px;
   font-size:12px;
   font-weight:700;
-
   cursor:pointer;
   text-align:center;
   text-decoration:none;
-
-  backdrop-filter:blur(15px);
-  -webkit-backdrop-filter:blur(15px);
 }
 
 .open-btn{
-  background:rgba(22,140,255,.9);
+  background:#168cff;
   color:white;
-  border:1px solid rgba(22,140,255,.4);
+  border:1px solid #168cff;
 }
 
 .copy-btn{
-  background:rgba(255,255,255,.025);
+  background:#07090c;
   color:#168cff;
   border:1px solid rgba(22,140,255,.3);
 }
 
 .copy-btn:hover{
-  background:rgba(22,140,255,.06);
+  background:#0a0f15;
 }
 
 /* bantuan */
@@ -355,18 +300,18 @@ textarea{
   align-items:center;
   gap:10px;
 
-  padding:9px 14px 9px 9px;
+  padding:8px 13px 8px 8px;
 
-  background:rgba(12,16,22,.62);
-  backdrop-filter:blur(25px);
-  -webkit-backdrop-filter:blur(25px);
+  background:rgba(5,7,10,.9);
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
 
-  border:1px solid rgba(255,255,255,.08);
-  border-radius:15px;
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:13px;
 
   box-shadow:
-    0 12px 40px rgba(0,0,0,.5),
-    inset 0 1px 0 rgba(255,255,255,.04);
+    0 12px 35px rgba(0,0,0,.55),
+    inset 0 1px 0 rgba(255,255,255,.025);
 
   cursor:pointer;
   z-index:999;
@@ -375,25 +320,25 @@ textarea{
 }
 
 .help-popup:hover{
+  border-color:rgba(22,140,255,.3);
   transform:translateY(-2px);
-  border-color:rgba(22,140,255,.25);
 }
 
 .help-icon{
   width:34px;
   height:34px;
 
-  border-radius:10px;
-
   display:flex;
   align-items:center;
   justify-content:center;
 
-  background:rgba(22,140,255,.08);
-  border:1px solid rgba(22,140,255,.14);
+  border-radius:10px;
+
+  background:#0a1017;
+  border:1px solid rgba(22,140,255,.18);
 
   color:#168cff;
-  font-size:15px;
+  font-size:14px;
 }
 
 .help-text{
@@ -409,33 +354,25 @@ textarea{
 }
 
 .help-sub{
-  color:#617286;
+  color:#526274;
   font-size:9px;
 }
 
 .help-mic{
   display:inline-block;
-
   width:5px;
   height:5px;
-
   margin-left:4px;
-
   vertical-align:middle;
-
   border-radius:50%;
-
   background:#39d98a;
-
-  box-shadow:
-    0 0 8px rgba(57,217,138,.5);
-
+  box-shadow:0 0 7px rgba(57,217,138,.5);
   animation:helpPulse 1.4s ease-in-out infinite;
 }
 
 @keyframes helpPulse{
   0%,100%{
-    opacity:.3;
+    opacity:.25;
   }
 
   50%{
@@ -446,14 +383,11 @@ textarea{
 /* footer */
 
 .footer{
-  border-top:1px solid rgba(255,255,255,.06);
-
+  border-top:1px solid rgba(255,255,255,.05);
   margin-top:35px;
   padding-top:18px;
-
   color:#405266;
   font-size:11px;
-
   display:flex;
   justify-content:space-between;
 }
@@ -487,6 +421,7 @@ a{
 <div class="wrap">
 
   <div class="top">
+
     <div class="logo">
       Cimel<span>.</span>Deploy
     </div>
@@ -494,6 +429,7 @@ a{
     <div class="badge">
       BETA
     </div>
+
   </div>
 
   <div class="label">
@@ -591,13 +527,15 @@ a{
 
 </div>
 
+<!-- bantuan -->
+
 <div
   class="help-popup"
   onclick="openHelp()"
 >
 
   <div class="help-icon">
-    ♫
+    ◉
   </div>
 
   <div class="help-text">
@@ -632,38 +570,33 @@ const fileName =
 const clearFileButton =
   document.getElementById("clearFile");
 
-fileInput.addEventListener("change", function(){
+fileInput.addEventListener("change",function(){
 
-  const file = this.files[0];
+  const file=this.files[0];
 
-  if(!file){
-    return;
-  }
+  if(!file)return;
 
-  fileName.textContent =
-    file.name;
+  fileName.textContent=file.name;
 
-  clearFileButton.style.display =
-    "block";
+  clearFileButton.style.display="block";
 
   if(!projectName.value.trim()){
 
-    projectName.value =
+    projectName.value=
       file.name
-        .replace(/\.(html?|HTML?)$/,"")
-        .toLowerCase()
-        .replace(/[^a-z0-9-]+/g,"-")
-        .replace(/^-+|-+$/g,"")
-        .slice(0,50);
+      .replace(/\.(html?|HTML?)$/,"")
+      .toLowerCase()
+      .replace(/[^a-z0-9-]+/g,"-")
+      .replace(/^-+|-+$/g,"")
+      .slice(0,50);
 
   }
 
-  const reader =
-    new FileReader();
+  const reader=new FileReader();
 
-  reader.onload = function(event){
+  reader.onload=function(event){
 
-    htmlCode.value =
+    htmlCode.value=
       event.target.result;
 
   };
@@ -674,9 +607,9 @@ fileInput.addEventListener("change", function(){
 
 function clearFile(){
 
-  fileInput.value = "";
-  fileName.textContent = "";
-  clearFileButton.style.display = "none";
+  fileInput.value="";
+  fileName.textContent="";
+  clearFileButton.style.display="none";
 
 }
 
@@ -691,24 +624,22 @@ function openHelp(){
 
 async function deploy(){
 
-  const name =
+  const name=
     projectName.value.trim();
 
-  const html =
+  const html=
     htmlCode.value.trim();
 
-  const status =
+  const status=
     document.getElementById("status");
 
-  const button =
+  const button=
     document.getElementById("deployButton");
 
   if(!name){
 
-    status.className =
-      "info error";
-
-    status.textContent =
+    status.className="info error";
+    status.textContent=
       "masukkan nama project dulu.";
 
     return;
@@ -716,32 +647,29 @@ async function deploy(){
 
   if(!html){
 
-    status.className =
-      "info error";
-
-    status.textContent =
+    status.className="info error";
+    status.textContent=
       "masukkan kode html dulu.";
 
     return;
   }
 
-  button.disabled = true;
+  button.disabled=true;
 
-  button.textContent =
+  button.textContent=
     "SEDANG DEPLOY...";
 
-  status.className =
-    "info";
+  status.className="info";
 
-  status.innerHTML =
-    '<span class="loading">' +
-    'sedang membuat website...' +
-    '<span class="loading-dot"></span>' +
+  status.innerHTML=
+    '<span class="loading">'+
+    'sedang membuat website...'+
+    '<span class="loading-dot"></span>'+
     '</span>';
 
   try{
 
-    const response =
+    const response=
       await fetch("/api/deploy",{
 
         method:"POST",
@@ -751,51 +679,41 @@ async function deploy(){
         },
 
         body:JSON.stringify({
-
           projectName:name,
           html:html
-
         })
 
       });
 
-    const data =
+    const data=
       await response.json();
 
     if(!response.ok){
 
-      let errorText = "";
+      let errorText="";
 
-      if(typeof data === "string"){
-        errorText = data;
+      if(typeof data==="string"){
+        errorText=data;
       }
 
-      else if(typeof data.error === "string"){
-        errorText = data.error;
+      else if(typeof data.error==="string"){
+        errorText=data.error;
       }
 
       else if(data.error){
-        errorText =
-          JSON.stringify(
-            data.error,
-            null,
-            2
-          );
+        errorText=
+          JSON.stringify(data.error,null,2);
       }
 
       else{
-        errorText =
-          JSON.stringify(
-            data,
-            null,
-            2
-          );
+        errorText=
+          JSON.stringify(data,null,2);
       }
 
       throw new Error(
-        "HTTP " +
-        response.status +
-        ": " +
+        "HTTP "+
+        response.status+
+        ": "+
         errorText
       );
     }
@@ -805,60 +723,60 @@ async function deploy(){
       throw new Error(
         "link website tidak ditemukan."
       );
+
     }
 
-    const websiteUrl =
+    const websiteUrl=
       data.url.replace(/'/g,"&#039;");
 
-    status.className =
+    status.className=
       "info success";
 
-    status.innerHTML =
-      "link website kamu sudah siap<br><br>" +
-      '<a href="' +
-      websiteUrl +
-      '" target="_blank">' +
-      websiteUrl +
-      "</a>" +
+    status.innerHTML=
+      "link website kamu sudah siap<br><br>"+
+      '<a href="'+
+      websiteUrl+
+      '" target="_blank">'+
+      websiteUrl+
+      "</a>"+
 
-      '<div class="result-actions">' +
+      '<div class="result-actions">'+
 
-      '<a class="result-btn open-btn" ' +
-      'href="' +
-      websiteUrl +
-      '" target="_blank">' +
-      'BUKA WEBSITE' +
-      '</a>' +
+      '<a class="result-btn open-btn" '+
+      'href="'+
+      websiteUrl+
+      '" target="_blank">'+
+      'BUKA WEBSITE'+
+      '</a>'+
 
-      '<button class="result-btn copy-btn" ' +
-      'onclick="copyWebsite(\'' +
-      data.url.replace(/'/g,"\\'") +
-      '\')">' +
-      'SALIN WEBSITE' +
-      '</button>' +
+      '<button class="result-btn copy-btn" '+
+      'onclick="copyWebsite(\''+
+      data.url.replace(/'/g,"\\'")+
+      '\')">'+
+      'SALIN WEBSITE'+
+      '</button>'+
 
       '</div>';
 
-    button.textContent =
+    button.textContent=
       "DEPLOY BERHASIL";
 
   }
 
   catch(error){
 
-    status.className =
+    status.className=
       "info error";
 
-    status.innerHTML =
-      "Deploy gagal:<br><br>" +
-      "<pre style='white-space:pre-wrap'>" +
-      escapeHtml(error.message) +
+    status.innerHTML=
+      "Deploy gagal:<br><br>"+
+      "<pre style='white-space:pre-wrap'>"+
+      escapeHtml(error.message)+
       "</pre>";
 
-    button.disabled =
-      false;
+    button.disabled=false;
 
-    button.textContent =
+    button.textContent=
       "DEPLOY LAGI";
 
   }
@@ -871,22 +789,20 @@ async function copyWebsite(url){
 
     await navigator.clipboard.writeText(url);
 
-    const buttons =
-      document.querySelectorAll(".copy-btn");
+    document
+      .querySelectorAll(".copy-btn")
+      .forEach(button=>{
 
-    buttons.forEach(button => {
+        button.textContent="TERSALIN";
 
-      button.textContent =
-        "TERSALIN";
+        setTimeout(()=>{
 
-      setTimeout(() => {
+          button.textContent=
+            "SALIN WEBSITE";
 
-        button.textContent =
-          "SALIN WEBSITE";
+        },1500);
 
-      },1500);
-
-    });
+      });
 
   }
 
@@ -912,4 +828,4 @@ function escapeHtml(text){
 </script>
 
 </body>
-  </html>
+    </html>
