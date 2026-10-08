@@ -1,121 +1,191 @@
+import { get } from "@vercel/blob";
+import crypto from "crypto";
+
 export default async function handler(req, res) {
-if (req.method !== "POST") {
-return res.status(405).json({
-error: "method not allowed"
-});
-}
+  if (req.method !== "POST") {
+    return res.status(405).json({
+      error: "method not allowed"
+    });
+  }
 
-try {
-const { projectName, html } = req.body;
+  try {
+    const { projectName, pathname } = req.body;
 
-if (!projectName || !html) {  
-  return res.status(400).json({  
-    error: "nama project dan html wajib diisi"  
-  });  
-}  
+    if (!projectName || !pathname) {
+      return res.status(400).json({
+        error: "nama project dan file wajib diisi"
+      });
+    }
 
-const token = process.env.VERCEL_TOKEN;  
+    const token = process.env.VERCEL_TOKEN;
 
-if (!token) {  
-  return res.status(500).json({  
-    error: "VERCEL_TOKEN belum dipasang di Vercel"  
-  });  
-}  
+    if (!token) {
+      return res.status(500).json({
+        error: "VERCEL_TOKEN belum dipasang di Vercel"
+      });
+    }
 
-// buat deployment production  
-const response = await fetch(  
-  "https://api.vercel.com/v13/deployments",  
-  {  
-    method: "POST",  
-    headers: {  
-      Authorization: `Bearer ${token}`,  
-      "Content-Type": "application/json"  
-    },  
-    body: JSON.stringify({  
-      name: projectName,  
-      target: "production",  
+    // Ambil HTML dari Vercel Blob
+    const result = await get(pathname, {
+      access: "private",
+      useCache: false
+    });
 
-      files: [  
-        {  
-          file: "index.html",  
-          data: html  
-        }  
-      ],  
+    if (!result) {
+      return res.status(404).json({
+        error: "file HTML tidak ditemukan di Blob"
+      });
+    }
 
-      projectSettings: {  
-        framework: null,  
-        devCommand: null,  
-        installCommand: null,  
-        buildCommand: null,  
-        outputDirectory: null,  
-        rootDirectory: null  
-      }  
-    })  
-  }  
-);  
+    const chunks = [];
 
-const data = await response.json();  
+    for await (const chunk of result.stream) {
+      chunks.push(Buffer.from(chunk));
+    }
 
-if (!response.ok) {  
-  return res.status(response.status).json(data);  
-}  
+    const fileBuffer = Buffer.concat(chunks);
+    const fileSize = fileBuffer.length;
 
-// tunggu sampai deployment READY  
-let deployment = data;  
+    if (!fileSize) {
+      return res.status(400).json({
+        error: "file HTML kosong"
+      });
+    }
 
-for (let i = 0; i < 40; i++) {  
-  await new Promise(resolve => setTimeout(resolve, 2000));  
+    // SHA file untuk Vercel
+    const sha = crypto
+      .createHash("sha1")
+      .update(fileBuffer)
+      .digest("hex");
 
-  const check = await fetch(  
-    `https://api.vercel.com/v13/deployments/${data.id}`,  
-    {  
-      headers: {  
-        Authorization: `Bearer ${token}`  
-      }  
-    }  
-  );  
+    // Upload file ke Vercel
+    const uploadResponse = await fetch(
+      "https://api.vercel.com/v2/now/files",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "x-vercel-digest": sha,
+          "Content-Type": "text/html"
+        },
+        body: fileBuffer
+      }
+    );
 
-  deployment = await check.json();  
+    if (!uploadResponse.ok) {
+      const errorText = await uploadResponse.text();
 
-  if (deployment.readyState === "READY") {  
-    break;  
-  }  
+      return res.status(uploadResponse.status).json({
+        error: "upload file ke Vercel gagal",
+        details: errorText
+      });
+    }
 
-  if (deployment.readyState === "ERROR") {  
-    return res.status(500).json({  
-      error: "build deployment gagal di Vercel"  
-    });  
-  }  
-}  
+    // Buat deployment menggunakan SHA file
+    const response = await fetch(
+      "https://api.vercel.com/v13/deployments",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          name: projectName,
+          target: "production",
 
-if (deployment.readyState !== "READY") {  
-  return res.status(504).json({  
-    error: "deployment timeout"  
-  });  
-}  
+          files: [
+            {
+              file: "index.html",
+              sha: sha,
+              size: fileSize
+            }
+          ],
 
-// ambil production alias  
-let alias = null;  
+          projectSettings: {
+            framework: null,
+            devCommand: null,
+            installCommand: null,
+            buildCommand: null,
+            outputDirectory: null,
+            rootDirectory: null
+          }
+        })
+      }
+    );
 
-if (deployment.alias && deployment.alias.length) {  
-  alias =  
-    deployment.alias.find(a => a.endsWith(".vercel.app")) ||  
-    deployment.alias[0];  
-}  
+    const data = await response.json();
 
-// fallback ke default production domain  
-if (!alias) {  
-  alias = `${projectName}.vercel.app`;  
-}  
+    if (!response.ok) {
+      return res.status(response.status).json(data);
+    }
 
-return res.status(200).json({  
-  ok: true,  
-  url: `https://${alias}`  
-});
+    // Tunggu deployment READY
+    let deployment = data;
 
-} catch (error) {
-return res.status(500).json({
-error: error.message
-});
-}
-}
+    for (let i = 0; i < 40; i++) {
+      await new Promise(resolve =>
+        setTimeout(resolve, 2000)
+      );
+
+      const check = await fetch(
+        `https://api.vercel.com/v13/deployments/${data.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      deployment = await check.json();
+
+      if (deployment.readyState === "READY") {
+        break;
+      }
+
+      if (
+        deployment.readyState === "ERROR" ||
+        deployment.readyState === "CANCELED"
+      ) {
+        return res.status(500).json({
+          error: "deployment gagal di Vercel"
+        });
+      }
+    }
+
+    if (deployment.readyState !== "READY") {
+      return res.status(504).json({
+        error: "deployment timeout"
+      });
+    }
+
+    let alias = null;
+
+    if (
+      deployment.alias &&
+      deployment.alias.length
+    ) {
+      alias =
+        deployment.alias.find(
+          a => a.endsWith(".vercel.app")
+        ) ||
+        deployment.alias[0];
+    }
+
+    if (!alias) {
+      alias = `${projectName}.vercel.app`;
+    }
+
+    return res.status(200).json({
+      ok: true,
+      url: `https://${alias}`
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      error: error.message || "server error"
+    });
+  }
+      }
