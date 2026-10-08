@@ -6,11 +6,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { projectName, blobUrl } = req.body || {};
+    const { projectName, html } = req.body;
 
-    if (!projectName || !blobUrl) {
+    if (!projectName || !html) {
       return res.status(400).json({
-        error: "nama project dan file wajib diisi"
+        error: "nama project dan html wajib diisi"
       });
     }
 
@@ -22,34 +22,15 @@ export default async function handler(req, res) {
       });
     }
 
-    // ambil HTML dari Blob
-    const fileResponse = await fetch(blobUrl);
-
-    if (!fileResponse.ok) {
-      return res.status(500).json({
-        error: "gagal mengambil file dari storage"
-      });
-    }
-
-    const html = await fileResponse.text();
-
-    if (!html) {
-      return res.status(400).json({
-        error: "file HTML kosong"
-      });
-    }
-
-    // buat deployment
+    // ✅ Ganti API v13 → v10 yang masih berfungsi & stabil
     const response = await fetch(
-      "https://api.vercel.com/v13/deployments",
+      "https://api.vercel.com/v10/deployments",
       {
         method: "POST",
-
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json"
         },
-
         body: JSON.stringify({
           name: projectName,
           target: "production",
@@ -62,46 +43,78 @@ export default async function handler(req, res) {
           ],
 
           projectSettings: {
-            framework: null
+            framework: null,
+            devCommand: null,
+            installCommand: null,
+            buildCommand: null,
+            outputDirectory: null,
+            rootDirectory: null
           }
         })
       }
     );
 
-    const responseText = await response.text();
+    const data = await response.json();
 
-    let data;
+    if (!response.ok) {
+      return res.status(response.status).json(data);
+    }
 
-    try {
-      data = JSON.parse(responseText);
-    } catch {
-      return res.status(500).json({
-        error: "Vercel mengirim response bukan JSON",
-        detail: responseText.slice(0, 500)
+    // Tunggu sampai siap
+    let deployment = data;
+
+    for (let i = 0; i < 40; i++) {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      const check = await fetch(
+        `https://api.vercel.com/v10/deployments/${data.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      deployment = await check.json();
+
+      if (deployment.readyState === "READY") {
+        break;
+      }
+
+      if (deployment.readyState === "ERROR") {
+        return res.status(500).json({
+          error: "build deployment gagal di Vercel"
+        });
+      }
+    }
+
+    if (deployment.readyState !== "READY") {
+      return res.status(504).json({
+        error: "deployment timeout"
       });
     }
 
-    if (!response.ok) {
-      return res.status(response.status).json({
-        error:
-          data.error?.message ||
-          data.error ||
-          "deployment gagal"
-      });
+    // Ambil alamat situs
+    let alias = null;
+
+    if (deployment.alias && deployment.alias.length) {
+      alias =
+        deployment.alias.find(a => a.endsWith(".vercel.app")) ||
+        deployment.alias[0];
+    }
+
+    if (!alias) {
+      alias = `${projectName}.vercel.app`;
     }
 
     return res.status(200).json({
       ok: true,
-      url: data.url
-        ? `https://${data.url}`
-        : `https://${projectName}.vercel.app`
+      url: `https://${alias}`
     });
 
   } catch (error) {
-    console.error("deploy error:", error);
-
     return res.status(500).json({
-      error: error.message || "terjadi kesalahan server"
+      error: error.message
     });
   }
-          }
+  }
