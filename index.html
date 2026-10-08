@@ -207,6 +207,15 @@ textarea{
   background: rgba(153, 153, 232, 0.08);
 }
 
+.file-limit{
+  text-align:center;
+  margin-top:10px;
+  font-size:13px;
+  color: var(--abu-teks);
+  font-weight:600;
+  font-family: 'Quicksand', sans-serif;
+}
+
 .file-name{
   margin-top:12px;
   color: var(--biru-gelap);
@@ -530,6 +539,7 @@ a:hover{
       <label class="file-label" for="htmlFile">
         Pilih file HTML atau tarik ke sini
       </label>
+      <div class="file-limit">Maksimal ukuran file: 3 MB</div>
       <input
         id="htmlFile"
         type="file"
@@ -559,7 +569,7 @@ a:hover{
 
   <div class="footer">
     <span>Cimel Deploy</span>
-    <span>v1.4</span>
+    <span>v1.5</span>
   </div>
 
 </div>
@@ -740,4 +750,5 @@ function escapeHtml(text){
 </script>
 
 </body>
-</html>
+  </html>
+  
