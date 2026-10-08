@@ -1,3 +1,11 @@
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb'
+    }
+  }
+};
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({
@@ -6,11 +14,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { projectName, html } = req.body;
+    const { projectName, blobUrl } = req.body || {};
 
-    if (!projectName || !html) {
+    if (!projectName || !blobUrl) {
       return res.status(400).json({
-        error: "nama project dan html wajib diisi"
+        error: "nama project dan file wajib diisi"
       });
     }
 
@@ -22,7 +30,24 @@ export default async function handler(req, res) {
       });
     }
 
-    // ✅ Ganti API v13 → v10 yang masih berfungsi & stabil
+    // Ambil file dari tautan
+    const fileResponse = await fetch(blobUrl);
+
+    if (!fileResponse.ok) {
+      return res.status(500).json({
+        error: "gagal mengambil file dari storage"
+      });
+    }
+
+    const html = await fileResponse.text();
+
+    if (!html) {
+      return res.status(400).json({
+        error: "file kosong"
+      });
+    }
+
+    // Pakai API v10 yang berfungsi + batas ukuran naik jadi 10MB
     const response = await fetch(
       "https://api.vercel.com/v10/deployments",
       {
@@ -34,87 +59,63 @@ export default async function handler(req, res) {
         body: JSON.stringify({
           name: projectName,
           target: "production",
-
           files: [
             {
               file: "index.html",
               data: html
             }
           ],
-
           projectSettings: {
-            framework: null,
-            devCommand: null,
-            installCommand: null,
-            buildCommand: null,
-            outputDirectory: null,
-            rootDirectory: null
+            framework: null
           }
         })
       }
     );
 
-    const data = await response.json();
+    const responseText = await response.text();
+    let data;
+
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      return res.status(500).json({
+        error: "respons bukan JSON",
+        detail: responseText.slice(0, 300)
+      });
+    }
 
     if (!response.ok) {
-      return res.status(response.status).json(data);
+      return res.status(response.status).json({
+        error: data.error?.message || "deploy gagal"
+      });
     }
 
     // Tunggu sampai siap
     let deployment = data;
-
-    for (let i = 0; i < 40; i++) {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
+    for (let i = 0; i < 30; i++) {
+      await new Promise(r => setTimeout(r, 2000));
       const check = await fetch(
         `https://api.vercel.com/v10/deployments/${data.id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-
       deployment = await check.json();
-
-      if (deployment.readyState === "READY") {
-        break;
-      }
-
+      if (deployment.readyState === "READY") break;
       if (deployment.readyState === "ERROR") {
-        return res.status(500).json({
-          error: "build deployment gagal di Vercel"
-        });
+        return res.status(500).json({ error: "gagal dibangun" });
       }
-    }
-
-    if (deployment.readyState !== "READY") {
-      return res.status(504).json({
-        error: "deployment timeout"
-      });
-    }
-
-    // Ambil alamat situs
-    let alias = null;
-
-    if (deployment.alias && deployment.alias.length) {
-      alias =
-        deployment.alias.find(a => a.endsWith(".vercel.app")) ||
-        deployment.alias[0];
-    }
-
-    if (!alias) {
-      alias = `${projectName}.vercel.app`;
     }
 
     return res.status(200).json({
       ok: true,
-      url: `https://${alias}`
+      url: deployment.url
+        ? `https://${deployment.url}`
+        : `https://${projectName}.vercel.app`
     });
 
   } catch (error) {
     return res.status(500).json({
-      error: error.message
+      error: error.message || "terjadi kesalahan"
     });
   }
-  }
+            }
+
