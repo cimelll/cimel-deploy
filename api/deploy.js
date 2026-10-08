@@ -6,11 +6,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { projectName, html } = req.body || {};
+    const { projectName, blobUrl } = req.body || {};
 
-    if (!projectName || !html) {
+    if (!projectName || !blobUrl) {
       return res.status(400).json({
-        error: "nama project dan html wajib diisi"
+        error: "nama project dan file wajib diisi"
       });
     }
 
@@ -22,14 +22,34 @@ export default async function handler(req, res) {
       });
     }
 
+    // ambil HTML dari Blob
+    const fileResponse = await fetch(blobUrl);
+
+    if (!fileResponse.ok) {
+      return res.status(500).json({
+        error: "gagal mengambil file dari storage"
+      });
+    }
+
+    const html = await fileResponse.text();
+
+    if (!html) {
+      return res.status(400).json({
+        error: "file HTML kosong"
+      });
+    }
+
+    // buat deployment
     const response = await fetch(
       "https://api.vercel.com/v13/deployments",
       {
         method: "POST",
+
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json"
         },
+
         body: JSON.stringify({
           name: projectName,
           target: "production",
@@ -42,51 +62,46 @@ export default async function handler(req, res) {
           ],
 
           projectSettings: {
-            framework: null,
-            devCommand: null,
-            installCommand: null,
-            buildCommand: null,
-            outputDirectory: null,
-            rootDirectory: null
+            framework: null
           }
         })
       }
     );
 
-    const text = await response.text();
+    const responseText = await response.text();
 
     let data;
 
     try {
-      data = JSON.parse(text);
+      data = JSON.parse(responseText);
     } catch {
-      return res.status(response.status || 500).json({
-        error: "Vercel mengirim response yang bukan JSON",
-        detail: text.slice(0, 500)
+      return res.status(500).json({
+        error: "Vercel mengirim response bukan JSON",
+        detail: responseText.slice(0, 500)
       });
     }
 
     if (!response.ok) {
       return res.status(response.status).json({
-        error: data.error?.message || data.error || "deployment gagal",
-        detail: data
+        error:
+          data.error?.message ||
+          data.error ||
+          "deployment gagal"
       });
     }
 
     return res.status(200).json({
       ok: true,
-      id: data.id,
-      url:
-        data.url
-          ? `https://${data.url}`
-          : `https://${projectName}.vercel.app`
+      url: data.url
+        ? `https://${data.url}`
+        : `https://${projectName}.vercel.app`
     });
 
   } catch (error) {
-    console.error("Deploy error:", error);
+    console.error("deploy error:", error);
 
     return res.status(500).json({
       error: error.message || "terjadi kesalahan server"
     });
   }
-}
+          }
