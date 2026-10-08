@@ -22,7 +22,6 @@ export default async function handler(req, res) {
       });
     }
 
-    // buat deployment production
     const response = await fetch(
       "https://api.vercel.com/v13/deployments",
       {
@@ -60,7 +59,6 @@ export default async function handler(req, res) {
       return res.status(response.status).json(data);
     }
 
-    // tunggu sampai deployment READY
     let deployment = data;
 
     for (let i = 0; i < 40; i++) {
@@ -81,9 +79,13 @@ export default async function handler(req, res) {
         break;
       }
 
-      if (deployment.readyState === "ERROR") {
+      if (
+        deployment.readyState === "ERROR" ||
+        deployment.readyState === "CANCELED"
+      ) {
         return res.status(500).json({
-          error: "build deployment gagal di Vercel"
+          error: "build deployment gagal di Vercel",
+          state: deployment.readyState
         });
       }
     }
@@ -94,16 +96,15 @@ export default async function handler(req, res) {
       });
     }
 
-    // ambil production alias
     let alias = null;
 
-    if (deployment.alias && deployment.alias.length) {
+    if (Array.isArray(deployment.alias) && deployment.alias.length > 0) {
       alias =
-        deployment.alias.find(a => a.endsWith(".vercel.app")) ||
-        deployment.alias[0];
+        deployment.alias.find(
+          a => a.endsWith(".vercel.app")
+        ) || deployment.alias[0];
     }
 
-    // fallback ke default production domain
     if (!alias) {
       alias = `${projectName}.vercel.app`;
     }
@@ -114,8 +115,10 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
+    console.error("Deploy error:", error);
+
     return res.status(500).json({
-      error: error.message
+      error: error.message || "terjadi kesalahan server"
     });
   }
-      }
+        }
