@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { projectName, html } = req.body;
+    const { projectName, html } = req.body || {};
 
     if (!projectName || !html) {
       return res.status(400).json({
@@ -53,65 +53,33 @@ export default async function handler(req, res) {
       }
     );
 
-    const data = await response.json();
+    const text = await response.text();
 
-    if (!response.ok) {
-      return res.status(response.status).json(data);
-    }
+    let data;
 
-    let deployment = data;
-
-    for (let i = 0; i < 40; i++) {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      const check = await fetch(
-        `https://api.vercel.com/v13/deployments/${data.id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
-
-      deployment = await check.json();
-
-      if (deployment.readyState === "READY") {
-        break;
-      }
-
-      if (
-        deployment.readyState === "ERROR" ||
-        deployment.readyState === "CANCELED"
-      ) {
-        return res.status(500).json({
-          error: "build deployment gagal di Vercel",
-          state: deployment.readyState
-        });
-      }
-    }
-
-    if (deployment.readyState !== "READY") {
-      return res.status(504).json({
-        error: "deployment timeout"
+    try {
+      data = JSON.parse(text);
+    } catch {
+      return res.status(response.status || 500).json({
+        error: "Vercel mengirim response yang bukan JSON",
+        detail: text.slice(0, 500)
       });
     }
 
-    let alias = null;
-
-    if (Array.isArray(deployment.alias) && deployment.alias.length > 0) {
-      alias =
-        deployment.alias.find(
-          a => a.endsWith(".vercel.app")
-        ) || deployment.alias[0];
-    }
-
-    if (!alias) {
-      alias = `${projectName}.vercel.app`;
+    if (!response.ok) {
+      return res.status(response.status).json({
+        error: data.error?.message || data.error || "deployment gagal",
+        detail: data
+      });
     }
 
     return res.status(200).json({
       ok: true,
-      url: `https://${alias}`
+      id: data.id,
+      url:
+        data.url
+          ? `https://${data.url}`
+          : `https://${projectName}.vercel.app`
     });
 
   } catch (error) {
@@ -121,4 +89,4 @@ export default async function handler(req, res) {
       error: error.message || "terjadi kesalahan server"
     });
   }
-        }
+}
