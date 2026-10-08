@@ -1,191 +1,163 @@
-import { get } from "@vercel/blob";
-import crypto from "crypto";
+async function deploy(){
+  const name = projectName.value.trim();
+  const html = htmlCode.value.trim();
+  const status = document.getElementById("status");
+  const button = document.getElementById("deployButton");
 
-export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({
-      error: "method not allowed"
-    });
+  if(!name){
+    status.className = "info error";
+    status.textContent = "Masukkan nama project dulu.";
+    projectName.focus();
+    return;
   }
 
-  try {
-    const { projectName, pathname } = req.body;
+  if(!html){
+    status.className = "info error";
+    status.textContent = "Masukkan kode HTML atau upload file dulu.";
+    htmlCode.focus();
+    return;
+  }
 
-    if (!projectName || !pathname) {
-      return res.status(400).json({
-        error: "nama project dan file wajib diisi"
-      });
-    }
+  button.disabled = true;
+  button.textContent = "MENGUPLOAD...";
 
-    const token = process.env.VERCEL_TOKEN;
+  status.className = "info";
+  status.innerHTML =
+    '<span class="loading">Mengupload HTML...<span class="loading-dot"></span></span>';
 
-    if (!token) {
-      return res.status(500).json({
-        error: "VERCEL_TOKEN belum dipasang di Vercel"
-      });
-    }
+  try{
 
-    // Ambil HTML dari Vercel Blob
-    const result = await get(pathname, {
-      access: "private",
-      useCache: false
-    });
+    // Load Vercel Blob client SDK
+    const { upload } = await import(
+      "https://esm.sh/@vercel/blob@2.6.1/client"
+    );
 
-    if (!result) {
-      return res.status(404).json({
-        error: "file HTML tidak ditemukan di Blob"
-      });
-    }
-
-    const chunks = [];
-
-    for await (const chunk of result.stream) {
-      chunks.push(Buffer.from(chunk));
-    }
-
-    const fileBuffer = Buffer.concat(chunks);
-    const fileSize = fileBuffer.length;
-
-    if (!fileSize) {
-      return res.status(400).json({
-        error: "file HTML kosong"
-      });
-    }
-
-    // SHA file untuk Vercel
-    const sha = crypto
-      .createHash("sha1")
-      .update(fileBuffer)
-      .digest("hex");
-
-    // Upload file ke Vercel
-    const uploadResponse = await fetch(
-      "https://api.vercel.com/v2/now/files",
+    // Ubah HTML textarea menjadi File
+    const file = new File(
+      [html],
+      `${name}.html`,
       {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "x-vercel-digest": sha,
-          "Content-Type": "text/html"
-        },
-        body: fileBuffer
+        type: "text/html"
       }
     );
 
-    if (!uploadResponse.ok) {
-      const errorText = await uploadResponse.text();
+    // Upload langsung dari browser ke Vercel Blob
+    const blob = await upload(
+      `${name}-${Date.now()}.html`,
+      file,
+      {
+        access: "private",
+        handleUploadUrl: "/api/upload",
+        multipart: true,
 
-      return res.status(uploadResponse.status).json({
-        error: "upload file ke Vercel gagal",
-        details: errorText
-      });
-    }
+        onUploadProgress(event){
+          const percent =
+            Math.round(event.percentage || 0);
 
-    // Buat deployment menggunakan SHA file
+          status.innerHTML =
+            `<span class="loading">Mengupload HTML ${percent}%...<span class="loading-dot"></span></span>`;
+        }
+      }
+    );
+
+    status.innerHTML =
+      '<span class="loading">Membuat deployment Vercel...<span class="loading-dot"></span></span>';
+
+    button.textContent = "DEPLOY...";
+
+    // Kirim HANYA pathname ke backend
     const response = await fetch(
-      "https://api.vercel.com/v13/deployments",
+      "/api/deploy",
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json"
         },
+
         body: JSON.stringify({
-          name: projectName,
-          target: "production",
-
-          files: [
-            {
-              file: "index.html",
-              sha: sha,
-              size: fileSize
-            }
-          ],
-
-          projectSettings: {
-            framework: null,
-            devCommand: null,
-            installCommand: null,
-            buildCommand: null,
-            outputDirectory: null,
-            rootDirectory: null
-          }
+          projectName: name,
+          pathname: blob.pathname
         })
       }
     );
 
     const data = await response.json();
 
-    if (!response.ok) {
-      return res.status(response.status).json(data);
-    }
+    if(!response.ok){
+      let errorText = "";
 
-    // Tunggu deployment READY
-    let deployment = data;
-
-    for (let i = 0; i < 40; i++) {
-      await new Promise(resolve =>
-        setTimeout(resolve, 2000)
-      );
-
-      const check = await fetch(
-        `https://api.vercel.com/v13/deployments/${data.id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
-
-      deployment = await check.json();
-
-      if (deployment.readyState === "READY") {
-        break;
+      if(typeof data === "string"){
+        errorText = data;
+      }else if(typeof data.error === "string"){
+        errorText = data.error;
+      }else{
+        errorText =
+          JSON.stringify(data, null, 2);
       }
 
-      if (
-        deployment.readyState === "ERROR" ||
-        deployment.readyState === "CANCELED"
-      ) {
-        return res.status(500).json({
-          error: "deployment gagal di Vercel"
-        });
-      }
+      throw new Error(
+        "HTTP " +
+        response.status +
+        ": " +
+        errorText
+      );
     }
 
-    if (deployment.readyState !== "READY") {
-      return res.status(504).json({
-        error: "deployment timeout"
-      });
+    if(!data.url){
+      throw new Error(
+        "Link website tidak ditemukan."
+      );
     }
 
-    let alias = null;
+    const websiteUrl =
+      data.url.replace(
+        /'/g,
+        "&#039;"
+      );
 
-    if (
-      deployment.alias &&
-      deployment.alias.length
-    ) {
-      alias =
-        deployment.alias.find(
-          a => a.endsWith(".vercel.app")
-        ) ||
-        deployment.alias[0];
-    }
+    status.className =
+      "info success";
 
-    if (!alias) {
-      alias = `${projectName}.vercel.app`;
-    }
+    status.innerHTML =
+      "Website berhasil dibuat." +
+      "<br><br>" +
+      "<a href='" +
+      websiteUrl +
+      "' target='_blank'>" +
+      websiteUrl +
+      "</a>" +
+      "<div class='result-actions'>" +
+        "<a class='result-btn open-btn' href='" +
+        websiteUrl +
+        "' target='_blank'>" +
+        "BUKA WEBSITE" +
+        "</a>" +
+        "<button class='result-btn copy-btn' " +
+        "onclick=\"copyWebsite('" +
+        data.url.replace(/'/g, "\\'") +
+        "')\">" +
+        "SALIN LINK" +
+        "</button>" +
+      "</div>";
 
-    return res.status(200).json({
-      ok: true,
-      url: `https://${alias}`
-    });
+    button.textContent = "BERHASIL";
 
-  } catch (error) {
+  }catch(error){
+
     console.error(error);
 
-    return res.status(500).json({
-      error: error.message || "server error"
-    });
+    status.className =
+      "info error";
+
+    status.innerHTML =
+      "Proses gagal." +
+      "<br><br>" +
+      "<pre style='white-space:pre-wrap;'>" +
+      escapeHtml(error.message) +
+      "</pre>";
+
+    button.disabled = false;
+    button.textContent =
+      "PROSES SEKARANG";
   }
       }
