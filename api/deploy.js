@@ -1,163 +1,121 @@
-async function deploy(){
-  const name = projectName.value.trim();
-  const html = htmlCode.value.trim();
-  const status = document.getElementById("status");
-  const button = document.getElementById("deployButton");
+export default async function handler(req, res) {
+if (req.method !== "POST") {
+return res.status(405).json({
+error: "method not allowed"
+});
+}
 
-  if(!name){
-    status.className = "info error";
-    status.textContent = "Masukkan nama project dulu.";
-    projectName.focus();
-    return;
-  }
+try {
+const { projectName, html } = req.body;
 
-  if(!html){
-    status.className = "info error";
-    status.textContent = "Masukkan kode HTML atau upload file dulu.";
-    htmlCode.focus();
-    return;
-  }
+if (!projectName || !html) {  
+  return res.status(400).json({  
+    error: "nama project dan html wajib diisi"  
+  });  
+}  
 
-  button.disabled = true;
-  button.textContent = "MENGUPLOAD...";
+const token = process.env.VERCEL_TOKEN;  
 
-  status.className = "info";
-  status.innerHTML =
-    '<span class="loading">Mengupload HTML...<span class="loading-dot"></span></span>';
+if (!token) {  
+  return res.status(500).json({  
+    error: "VERCEL_TOKEN belum dipasang di Vercel"  
+  });  
+}  
 
-  try{
+// buat deployment production  
+const response = await fetch(  
+  "https://api.vercel.com/v13/deployments",  
+  {  
+    method: "POST",  
+    headers: {  
+      Authorization: `Bearer ${token}`,  
+      "Content-Type": "application/json"  
+    },  
+    body: JSON.stringify({  
+      name: projectName,  
+      target: "production",  
 
-    // Load Vercel Blob client SDK
-    const { upload } = await import(
-      "https://esm.sh/@vercel/blob@2.6.1/client"
-    );
+      files: [  
+        {  
+          file: "index.html",  
+          data: html  
+        }  
+      ],  
 
-    // Ubah HTML textarea menjadi File
-    const file = new File(
-      [html],
-      `${name}.html`,
-      {
-        type: "text/html"
-      }
-    );
+      projectSettings: {  
+        framework: null,  
+        devCommand: null,  
+        installCommand: null,  
+        buildCommand: null,  
+        outputDirectory: null,  
+        rootDirectory: null  
+      }  
+    })  
+  }  
+);  
 
-    // Upload langsung dari browser ke Vercel Blob
-    const blob = await upload(
-      `${name}-${Date.now()}.html`,
-      file,
-      {
-        access: "private",
-        handleUploadUrl: "/api/upload",
-        multipart: true,
+const data = await response.json();  
 
-        onUploadProgress(event){
-          const percent =
-            Math.round(event.percentage || 0);
+if (!response.ok) {  
+  return res.status(response.status).json(data);  
+}  
 
-          status.innerHTML =
-            `<span class="loading">Mengupload HTML ${percent}%...<span class="loading-dot"></span></span>`;
-        }
-      }
-    );
+// tunggu sampai deployment READY  
+let deployment = data;  
 
-    status.innerHTML =
-      '<span class="loading">Membuat deployment Vercel...<span class="loading-dot"></span></span>';
+for (let i = 0; i < 40; i++) {  
+  await new Promise(resolve => setTimeout(resolve, 2000));  
 
-    button.textContent = "DEPLOY...";
+  const check = await fetch(  
+    `https://api.vercel.com/v13/deployments/${data.id}`,  
+    {  
+      headers: {  
+        Authorization: `Bearer ${token}`  
+      }  
+    }  
+  );  
 
-    // Kirim HANYA pathname ke backend
-    const response = await fetch(
-      "/api/deploy",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+  deployment = await check.json();  
 
-        body: JSON.stringify({
-          projectName: name,
-          pathname: blob.pathname
-        })
-      }
-    );
+  if (deployment.readyState === "READY") {  
+    break;  
+  }  
 
-    const data = await response.json();
+  if (deployment.readyState === "ERROR") {  
+    return res.status(500).json({  
+      error: "build deployment gagal di Vercel"  
+    });  
+  }  
+}  
 
-    if(!response.ok){
-      let errorText = "";
+if (deployment.readyState !== "READY") {  
+  return res.status(504).json({  
+    error: "deployment timeout"  
+  });  
+}  
 
-      if(typeof data === "string"){
-        errorText = data;
-      }else if(typeof data.error === "string"){
-        errorText = data.error;
-      }else{
-        errorText =
-          JSON.stringify(data, null, 2);
-      }
+// ambil production alias  
+let alias = null;  
 
-      throw new Error(
-        "HTTP " +
-        response.status +
-        ": " +
-        errorText
-      );
+if (deployment.alias && deployment.alias.length) {  
+  alias =  
+    deployment.alias.find(a => a.endsWith(".vercel.app")) ||  
+    deployment.alias[0];  
+}  
+
+// fallback ke default production domain  
+if (!alias) {  
+  alias = `${projectName}.vercel.app`;  
+}  
+
+return res.status(200).json({  
+  ok: true,  
+  url: `https://${alias}`  
+});
+
+} catch (error) {
+return res.status(500).json({
+error: error.message
+});
+}
     }
-
-    if(!data.url){
-      throw new Error(
-        "Link website tidak ditemukan."
-      );
-    }
-
-    const websiteUrl =
-      data.url.replace(
-        /'/g,
-        "&#039;"
-      );
-
-    status.className =
-      "info success";
-
-    status.innerHTML =
-      "Website berhasil dibuat." +
-      "<br><br>" +
-      "<a href='" +
-      websiteUrl +
-      "' target='_blank'>" +
-      websiteUrl +
-      "</a>" +
-      "<div class='result-actions'>" +
-        "<a class='result-btn open-btn' href='" +
-        websiteUrl +
-        "' target='_blank'>" +
-        "BUKA WEBSITE" +
-        "</a>" +
-        "<button class='result-btn copy-btn' " +
-        "onclick=\"copyWebsite('" +
-        data.url.replace(/'/g, "\\'") +
-        "')\">" +
-        "SALIN LINK" +
-        "</button>" +
-      "</div>";
-
-    button.textContent = "BERHASIL";
-
-  }catch(error){
-
-    console.error(error);
-
-    status.className =
-      "info error";
-
-    status.innerHTML =
-      "Proses gagal." +
-      "<br><br>" +
-      "<pre style='white-space:pre-wrap;'>" +
-      escapeHtml(error.message) +
-      "</pre>";
-
-    button.disabled = false;
-    button.textContent =
-      "PROSES SEKARANG";
-  }
-      }
